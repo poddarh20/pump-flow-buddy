@@ -14,7 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      credit_parties: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          fuel_type: string
+          id: string
+          notes: string | null
+          party_id: string
+          payment_received: number
+          quantity: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date: string
+          fuel_type: string
+          id?: string
+          notes?: string | null
+          party_id: string
+          payment_received?: number
+          quantity?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          fuel_type?: string
+          id?: string
+          notes?: string | null
+          party_id?: string
+          payment_received?: number
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "credit_parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_records: {
+        Row: {
+          bank_deposit: number
+          created_at: string
+          credit_party_total: number
+          daily_expense: number
+          date: string
+          id: string
+          price_cng: number
+          price_hsd: number
+          price_ms: number
+          price_xtra_green: number
+        }
+        Insert: {
+          bank_deposit?: number
+          created_at?: string
+          credit_party_total?: number
+          daily_expense?: number
+          date: string
+          id?: string
+          price_cng?: number
+          price_hsd?: number
+          price_ms?: number
+          price_xtra_green?: number
+        }
+        Update: {
+          bank_deposit?: number
+          created_at?: string
+          credit_party_total?: number
+          daily_expense?: number
+          date?: string
+          id?: string
+          price_cng?: number
+          price_hsd?: number
+          price_ms?: number
+          price_xtra_green?: number
+        }
+        Relationships: []
+      }
+      meter_readings: {
+        Row: {
+          closing: number
+          daily_record_id: string
+          id: string
+          nozzle_name: string
+          opening: number
+          unit_id: number
+        }
+        Insert: {
+          closing?: number
+          daily_record_id: string
+          id?: string
+          nozzle_name: string
+          opening?: number
+          unit_id: number
+        }
+        Update: {
+          closing?: number
+          daily_record_id?: string
+          id?: string
+          nozzle_name?: string
+          opening?: number
+          unit_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meter_readings_daily_record_id_fkey"
+            columns: ["daily_record_id"]
+            isOneToOne: false
+            referencedRelation: "daily_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

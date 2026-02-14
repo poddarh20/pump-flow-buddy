@@ -1,7 +1,7 @@
 // Unit definitions
 export interface Nozzle {
   name: string;
-  fuelType: 'MS' | 'NHSD' | 'Normal Diesel' | 'Xtra Green Diesel' | 'CNG';
+  fuelType: FuelType;
 }
 
 export interface Unit {
@@ -17,8 +17,8 @@ export const units: Unit[] = [
     nozzles: [
       { name: 'Petrol1', fuelType: 'MS' },
       { name: 'Petrol2', fuelType: 'MS' },
-      { name: 'Diesel1', fuelType: 'NHSD' },
-      { name: 'Diesel2', fuelType: 'NHSD' },
+      { name: 'Diesel1', fuelType: 'HSD' },
+      { name: 'Diesel2', fuelType: 'HSD' },
     ],
   },
   {
@@ -27,24 +27,24 @@ export const units: Unit[] = [
     nozzles: [
       { name: 'Petrol1', fuelType: 'MS' },
       { name: 'Petrol2', fuelType: 'MS' },
-      { name: 'Diesel1', fuelType: 'NHSD' },
-      { name: 'Diesel2', fuelType: 'NHSD' },
+      { name: 'Diesel1', fuelType: 'HSD' },
+      { name: 'Diesel2', fuelType: 'HSD' },
     ],
   },
   {
     id: 3,
     name: 'Diesel Unit 3',
     nozzles: [
-      { name: 'Normal Diesel', fuelType: 'Normal Diesel' },
-      { name: 'Xtra Green Diesel', fuelType: 'Xtra Green Diesel' },
+      { name: 'HSD', fuelType: 'HSD' },
+      { name: 'Xtra Green', fuelType: 'Xtra Green' },
     ],
   },
   {
     id: 4,
     name: 'Diesel Unit 4',
     nozzles: [
-      { name: 'Normal Diesel', fuelType: 'Normal Diesel' },
-      { name: 'Xtra Green Diesel', fuelType: 'Xtra Green Diesel' },
+      { name: 'HSD', fuelType: 'HSD' },
+      { name: 'Xtra Green', fuelType: 'Xtra Green' },
     ],
   },
   {
@@ -54,15 +54,14 @@ export const units: Unit[] = [
   },
 ];
 
-export type FuelType = 'MS' | 'NHSD' | 'Normal Diesel' | 'Xtra Green Diesel' | 'CNG';
+export type FuelType = 'MS' | 'HSD' | 'Xtra Green' | 'CNG';
 
-export const fuelTypes: FuelType[] = ['MS', 'NHSD', 'Normal Diesel', 'Xtra Green Diesel', 'CNG'];
+export const fuelTypes: FuelType[] = ['MS', 'HSD', 'Xtra Green', 'CNG'];
 
 export const fuelColors: Record<FuelType, string> = {
   MS: 'hsl(38, 92%, 50%)',
-  NHSD: 'hsl(200, 80%, 50%)',
-  'Normal Diesel': 'hsl(142, 70%, 45%)',
-  'Xtra Green Diesel': 'hsl(160, 80%, 40%)',
+  HSD: 'hsl(200, 80%, 50%)',
+  'Xtra Green': 'hsl(142, 70%, 45%)',
   CNG: 'hsl(280, 60%, 55%)',
 };
 
@@ -75,9 +74,8 @@ export interface MeterReading {
 
 export interface Prices {
   MS: number;
-  NHSD: number;
-  'Normal Diesel': number;
-  'Xtra Green Diesel': number;
+  HSD: number;
+  'Xtra Green': number;
   CNG: number;
 }
 
@@ -102,15 +100,14 @@ export interface DailyRecord {
 
 export const defaultPrices: Prices = {
   MS: 0,
-  NHSD: 0,
-  'Normal Diesel': 0,
-  'Xtra Green Diesel': 0,
+  HSD: 0,
+  'Xtra Green': 0,
   CNG: 0,
 };
 
 export function calculateSales(readings: MeterReading[]): Record<FuelType, number> {
   const sales: Record<FuelType, number> = {
-    MS: 0, NHSD: 0, 'Normal Diesel': 0, 'Xtra Green Diesel': 0, CNG: 0,
+    MS: 0, HSD: 0, 'Xtra Green': 0, CNG: 0,
   };
   
   for (const r of readings) {
