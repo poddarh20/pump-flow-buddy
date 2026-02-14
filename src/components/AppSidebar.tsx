@@ -1,4 +1,4 @@
-import { Fuel, Gauge, FileText, CreditCard, DollarSign } from 'lucide-react';
+import { Fuel, Gauge, FileText, CreditCard, DollarSign, Calendar, Users } from 'lucide-react';
 import { NavLink as RouterNavLink } from 'react-router-dom';
 
 const navItems = [
@@ -6,7 +6,8 @@ const navItems = [
   { to: '/readings', icon: Fuel, label: 'Meter Readings' },
   { to: '/prices', icon: DollarSign, label: 'Fuel Prices' },
   { to: '/report', icon: FileText, label: 'Daily Report' },
-  { to: '/ledger', icon: CreditCard, label: 'Ledger' },
+  { to: '/credit-ledger', icon: Users, label: 'Credit Ledger' },
+  { to: '/monthly', icon: Calendar, label: 'Monthly View' },
 ];
 
 export function AppSidebar() {
