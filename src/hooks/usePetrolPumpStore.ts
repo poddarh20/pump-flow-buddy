@@ -45,6 +45,7 @@ export function usePetrolPumpStore() {
       setPrices({
         MS: Number(record.price_ms),
         HSD: Number(record.price_hsd),
+        'Xtra Premium': Number(record.price_xtra_premium ?? 0),
         'Xtra Green': Number(record.price_xtra_green),
         CNG: Number(record.price_cng),
       });
