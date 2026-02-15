@@ -1,73 +1,64 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Save, Trash2 } from 'lucide-react';
-import { fuelTypes, type FuelType } from '@/lib/petrolPumpData';
+import { Plus } from 'lucide-react';
+import { getCurrentFinancialYear, getFinancialYearRange, getFinancialYearOptions, formatFinancialYear } from '@/lib/financialYear';
+import AllPartiesDues from '@/components/credit-ledger/AllPartiesDues';
+import PartyTransactions from '@/components/credit-ledger/PartyTransactions';
 
-interface CreditParty {
-  id: string;
-  name: string;
-}
-
-interface CreditTransaction {
-  id?: string;
-  party_id: string;
-  date: string;
-  fuel_type: string;
-  quantity: number;
-  amount: number;
-  payment_received: number;
-  notes: string;
-}
-
-function getToday() {
-  return new Date().toISOString().split('T')[0];
-}
+interface CreditParty { id: string; name: string; }
+interface Transaction { id?: string; date: string; amount: number; payment_received: number; notes: string; }
+interface PartyDue { id: string; name: string; outstanding: number; }
 
 export default function CreditLedger() {
   const [parties, setParties] = useState<CreditParty[]>([]);
+  const [partyDues, setPartyDues] = useState<PartyDue[]>([]);
   const [selectedParty, setSelectedParty] = useState<string | null>(null);
   const [newPartyName, setNewPartyName] = useState('');
-  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-
-  // New transaction form
-  const [txDate, setTxDate] = useState(getToday());
-  const [txFuel, setTxFuel] = useState<string>('HSD');
-  const [txQty, setTxQty] = useState('');
-  const [txAmount, setTxAmount] = useState('');
-  const [txPayment, setTxPayment] = useState('');
-  const [txNotes, setTxNotes] = useState('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [fy, setFy] = useState(getCurrentFinancialYear);
+  const fyOptions = getFinancialYearOptions();
 
   useEffect(() => { loadParties(); }, []);
-
-  useEffect(() => {
-    if (selectedParty) loadTransactions(selectedParty, selectedMonth);
-  }, [selectedParty, selectedMonth]);
+  useEffect(() => { if (parties.length) loadAllDues(); }, [parties, fy]);
+  useEffect(() => { if (selectedParty) loadTransactions(selectedParty); }, [selectedParty, fy]);
 
   const loadParties = async () => {
     const { data } = await supabase.from('credit_parties').select('*').order('name');
     if (data) setParties(data);
   };
 
-  const loadTransactions = async (partyId: string, month: string) => {
-    const [year, mon] = month.split('-');
-    const startDate = `${year}-${mon}-01`;
-    const endDate = `${year}-${mon}-${new Date(Number(year), Number(mon), 0).getDate()}`;
+  const loadAllDues = async () => {
+    // Load all transactions for the FY to compute outstanding per party
+    const { start, end } = getFinancialYearRange(fy);
+    const { data } = await supabase
+      .from('credit_transactions')
+      .select('party_id, amount, payment_received')
+      .gte('date', start)
+      .lte('date', end);
 
+    const dueMap: Record<string, number> = {};
+    parties.forEach(p => { dueMap[p.id] = 0; });
+    if (data) {
+      data.forEach(t => {
+        dueMap[t.party_id] = (dueMap[t.party_id] || 0) + Number(t.amount) - Number(t.payment_received);
+      });
+    }
+    setPartyDues(parties.map(p => ({ id: p.id, name: p.name, outstanding: dueMap[p.id] || 0 })));
+  };
+
+  const loadTransactions = async (partyId: string) => {
+    const { start, end } = getFinancialYearRange(fy);
     const { data } = await supabase
       .from('credit_transactions')
       .select('*')
       .eq('party_id', partyId)
-      .gte('date', startDate)
-      .lte('date', endDate)
+      .gte('date', start)
+      .lte('date', end)
       .order('date');
-    if (data) setTransactions(data.map(d => ({ ...d, quantity: Number(d.quantity), amount: Number(d.amount), payment_received: Number(d.payment_received), notes: d.notes || '' })));
+    if (data) setTransactions(data.map(d => ({ id: d.id, date: d.date, amount: Number(d.amount), payment_received: Number(d.payment_received), notes: d.notes || '' })));
   };
 
   const addParty = async () => {
@@ -79,46 +70,51 @@ export default function CreditLedger() {
     }
   };
 
-  const addTransaction = async () => {
-    if (!selectedParty || !txQty) return;
-    const tx = {
+  const addTransaction = async (tx: { date: string; amount: number; payment_received: number; notes: string }) => {
+    if (!selectedParty) return;
+    const { data } = await supabase.from('credit_transactions').insert({
       party_id: selectedParty,
-      date: txDate,
-      fuel_type: txFuel,
-      quantity: Number(txQty),
-      amount: Number(txAmount) || 0,
-      payment_received: Number(txPayment) || 0,
-      notes: txNotes,
-    };
-    const { data } = await supabase.from('credit_transactions').insert(tx).select().single();
+      date: tx.date,
+      fuel_type: '-',
+      quantity: 0,
+      amount: tx.amount,
+      payment_received: tx.payment_received,
+      notes: tx.notes,
+    }).select().single();
     if (data) {
-      setTransactions(prev => [...prev, { ...data, quantity: Number(data.quantity), amount: Number(data.amount), payment_received: Number(data.payment_received), notes: data.notes || '' }].sort((a, b) => a.date.localeCompare(b.date)));
-      setTxQty(''); setTxAmount(''); setTxPayment(''); setTxNotes('');
+      setTransactions(prev => [...prev, { id: data.id, date: data.date, amount: Number(data.amount), payment_received: Number(data.payment_received), notes: data.notes || '' }].sort((a, b) => a.date.localeCompare(b.date)));
+      loadAllDues();
     }
   };
 
   const deleteTransaction = async (id: string) => {
     await supabase.from('credit_transactions').delete().eq('id', id);
     setTransactions(prev => prev.filter(t => t.id !== id));
+    loadAllDues();
   };
 
-  const totalCredit = transactions.reduce((s, t) => s + t.amount, 0);
-  const totalPayment = transactions.reduce((s, t) => s + t.payment_received, 0);
-  const balance = totalCredit - totalPayment;
-
-  // Generate month options
-  const monthOptions: string[] = [];
-  const now = new Date();
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    monthOptions.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-  }
+  const selectedPartyName = parties.find(p => p.id === selectedParty)?.name || '';
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Credit Party Ledger</h2>
-        <p className="text-sm text-muted-foreground mt-1">Track credit sales and payments per party</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Credit Party Ledger</h2>
+          <p className="text-sm text-muted-foreground mt-1">Track receivables and payments per party</p>
+        </div>
+        <div className="min-w-[200px]">
+          <label className="text-xs text-muted-foreground mb-1 block">Financial Year</label>
+          <Select value={fy} onValueChange={setFy}>
+            <SelectTrigger className="bg-secondary border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {fyOptions.map(f => (
+                <SelectItem key={f} value={f}>{formatFinancialYear(f)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Add party */}
@@ -126,7 +122,7 @@ export default function CreditLedger() {
         <Input
           value={newPartyName}
           onChange={e => setNewPartyName(e.target.value)}
-          placeholder="New party name (e.g. JBA, OSS...)"
+          placeholder="New party name"
           className="bg-secondary border-border"
           onKeyDown={e => e.key === 'Enter' && addParty()}
         />
@@ -135,131 +131,28 @@ export default function CreditLedger() {
         </Button>
       </div>
 
-      {/* Party selector + Month */}
-      <div className="flex flex-wrap gap-4">
-        <div className="min-w-[200px]">
-          <label className="text-sm text-muted-foreground mb-1 block">Select Party</label>
-          <Select value={selectedParty || ''} onValueChange={setSelectedParty}>
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue placeholder="Choose party" />
-            </SelectTrigger>
-            <SelectContent>
-              {parties.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: All parties dues */}
+        <div className="lg:col-span-1">
+          <AllPartiesDues parties={partyDues} onSelectParty={setSelectedParty} selectedPartyId={selectedParty} />
         </div>
-        <div className="min-w-[160px]">
-          <label className="text-sm text-muted-foreground mb-1 block">Month</label>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOptions.map(m => (
-                <SelectItem key={m} value={m}>
-                  {new Date(m + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        {/* Right: Selected party transactions */}
+        <div className="lg:col-span-2">
+          {selectedParty ? (
+            <PartyTransactions
+              partyName={selectedPartyName}
+              transactions={transactions}
+              onAdd={addTransaction}
+              onDelete={deleteTransaction}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-48 text-muted-foreground text-sm border border-border rounded-lg">
+              Select a party from the list to view transactions
+            </div>
+          )}
         </div>
       </div>
-
-      {selectedParty && (
-        <>
-          {/* Add transaction form */}
-          <div className="bg-card border border-border rounded-lg p-5">
-            <h3 className="font-semibold text-foreground mb-3">Add Transaction</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground">Date</label>
-                <Input type="date" value={txDate} onChange={e => setTxDate(e.target.value)} className="font-mono bg-secondary border-border" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Fuel</label>
-                <Select value={txFuel} onValueChange={setTxFuel}>
-                  <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {fuelTypes.map(ft => <SelectItem key={ft} value={ft}>{ft}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Qty (L)</label>
-                <Input type="number" value={txQty} onChange={e => setTxQty(e.target.value)} className="font-mono bg-secondary border-border" placeholder="0" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Amount ₹</label>
-                <Input type="number" value={txAmount} onChange={e => setTxAmount(e.target.value)} className="font-mono bg-secondary border-border" placeholder="0" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Payment ₹</label>
-                <Input type="number" value={txPayment} onChange={e => setTxPayment(e.target.value)} className="font-mono bg-secondary border-border" placeholder="0" />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={addTransaction} size="sm" className="gap-1 w-full">
-                  <Save className="w-4 h-4" /> Save
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Transactions table */}
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary/50">
-                  <th className="text-left p-3 text-muted-foreground font-medium">Date</th>
-                  <th className="text-left p-3 text-muted-foreground font-medium">Fuel</th>
-                  <th className="text-right p-3 text-muted-foreground font-medium">Qty (L)</th>
-                  <th className="text-right p-3 text-muted-foreground font-medium">Credit ₹</th>
-                  <th className="text-right p-3 text-muted-foreground font-medium">Payment ₹</th>
-                  <th className="text-right p-3 text-muted-foreground font-medium">Notes</th>
-                  <th className="p-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map(tx => (
-                  <tr key={tx.id} className="border-b border-border last:border-0">
-                    <td className="p-3 font-mono text-foreground">{tx.date}</td>
-                    <td className="p-3 text-foreground">{tx.fuel_type}</td>
-                    <td className="p-3 text-right font-mono text-foreground">{tx.quantity}</td>
-                    <td className="p-3 text-right font-mono text-destructive">₹{tx.amount}</td>
-                    <td className="p-3 text-right font-mono text-success">₹{tx.payment_received}</td>
-                    <td className="p-3 text-right text-muted-foreground text-xs">{tx.notes}</td>
-                    <td className="p-3">
-                      <Button size="icon" variant="ghost" onClick={() => tx.id && deleteTransaction(tx.id)}>
-                        <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {transactions.length === 0 && (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No transactions this month</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Monthly summary */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-card border border-border rounded-lg p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Total Credit</p>
-              <p className="text-xl font-bold font-mono text-destructive">₹{totalCredit.toFixed(0)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Total Payment</p>
-              <p className="text-xl font-bold font-mono text-success">₹{totalPayment.toFixed(0)}</p>
-            </div>
-            <div className={`rounded-lg border p-4 text-center ${balance > 0 ? 'border-destructive/30 bg-destructive/5' : 'border-success/30 bg-success/5'}`}>
-              <p className="text-xs text-muted-foreground mb-1">Balance Due</p>
-              <p className={`text-xl font-bold font-mono ${balance > 0 ? 'text-destructive' : 'text-success'}`}>₹{balance.toFixed(0)}</p>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
