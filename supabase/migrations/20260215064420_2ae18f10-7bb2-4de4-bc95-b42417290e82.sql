@@ -1,0 +1,1 @@
+ALTER TABLE public.daily_records ADD COLUMN price_xtra_premium numeric NOT NULL DEFAULT 0;
