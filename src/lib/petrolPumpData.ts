@@ -25,9 +25,9 @@ export const units: Unit[] = [
     id: 2,
     name: 'DU2',
     nozzles: [
-      { name: 'MS2', fuelType: 'MS' },
-      { name: 'HSD3', fuelType: 'HSD' },
       { name: 'MS3', fuelType: 'MS' },
+      { name: 'HSD3', fuelType: 'HSD' },
+      { name: 'MS4', fuelType: 'MS' },
       { name: 'HSD4', fuelType: 'HSD' },
     ],
   },
