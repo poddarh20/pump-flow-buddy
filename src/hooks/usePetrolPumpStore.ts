@@ -42,12 +42,13 @@ export function usePetrolPumpStore() {
 
     if (record) {
       setDailyRecordId(record.id);
+      const rec = record as any;
       setPrices({
-        MS: Number(record.price_ms),
-        HSD: Number(record.price_hsd),
-        'Xtra Premium': Number(record.price_xtra_premium ?? 0),
-        'Xtra Green': Number(record.price_xtra_green),
-        CNG: Number(record.price_cng),
+        MS: Number(rec.price_ms),
+        HSD: Number(rec.price_hsd),
+        'Xtra Premium': Number(rec.price_xtra_premium ?? 0),
+        'Xtra Green': Number(rec.price_xtra_green),
+        CNG: Number(rec.price_cng),
       });
       setOutflow({
         bankDeposit: Number(record.bank_deposit),
@@ -85,10 +86,11 @@ export function usePetrolPumpStore() {
     try {
       let recordId = dailyRecordId;
 
-      const recordData = {
+      const recordData: any = {
         date,
         price_ms: prices.MS,
         price_hsd: prices.HSD,
+        price_xtra_premium: prices['Xtra Premium'],
         price_xtra_green: prices['Xtra Green'],
         price_cng: prices.CNG,
         bank_deposit: outflow.bankDeposit,

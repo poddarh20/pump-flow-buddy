@@ -88,6 +88,7 @@ export type Database = {
           price_hsd: number
           price_ms: number
           price_xtra_green: number
+          price_xtra_premium: number
         }
         Insert: {
           bank_deposit?: number
@@ -100,6 +101,7 @@ export type Database = {
           price_hsd?: number
           price_ms?: number
           price_xtra_green?: number
+          price_xtra_premium?: number
         }
         Update: {
           bank_deposit?: number
@@ -112,6 +114,7 @@ export type Database = {
           price_hsd?: number
           price_ms?: number
           price_xtra_green?: number
+          price_xtra_premium?: number
         }
         Relationships: []
       }
