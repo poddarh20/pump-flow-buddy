@@ -92,9 +92,10 @@ export interface Prices {
 export interface Outflow {
   bankDeposit: number;
   creditParty: number;
-  dailyExpense: number;
   fleetCard: number;
   cms: number;
+  paytm: number;
+  cashCollection: number;
 }
 
 export interface LedgerEntry {
@@ -102,11 +103,17 @@ export interface LedgerEntry {
   balance: number;
 }
 
+// Lube is a separate inflow item (not from meter readings)
+export interface InflowExtras {
+  lube: number;
+}
+
 export interface DailyRecord {
   date: string;
   readings: MeterReading[];
   prices: Prices;
   outflow: Outflow;
+  inflowExtras: InflowExtras;
   ledgerEntries: LedgerEntry[];
 }
 
@@ -134,10 +141,11 @@ export function calculateSales(readings: MeterReading[]): Record<FuelType, numbe
   return sales;
 }
 
-export function calculateInflow(sales: Record<FuelType, number>, prices: Prices): number {
-  return fuelTypes.reduce((sum, ft) => sum + sales[ft] * prices[ft], 0);
+export function calculateInflow(sales: Record<FuelType, number>, prices: Prices, inflowExtras?: InflowExtras): number {
+  const fuelInflow = fuelTypes.reduce((sum, ft) => sum + sales[ft] * prices[ft], 0);
+  return fuelInflow + (inflowExtras?.lube || 0);
 }
 
 export function calculateTotalOutflow(outflow: Outflow): number {
-  return outflow.bankDeposit + outflow.creditParty + outflow.dailyExpense + outflow.fleetCard + outflow.cms;
+  return outflow.bankDeposit + outflow.creditParty + outflow.fleetCard + outflow.cms + outflow.paytm + outflow.cashCollection;
 }
