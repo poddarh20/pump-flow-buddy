@@ -5,13 +5,13 @@ import type { usePetrolPumpStore } from '@/hooks/usePetrolPumpStore';
 type StoreReturn = ReturnType<typeof usePetrolPumpStore>;
 
 export default function MeterReadings({ store }: { store: StoreReturn }) {
-  const { readings, updateReading } = store;
+  const { readings, updateReading, lube, setLube } = store;
 
   return (
     <div className="p-6 space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-foreground">Meter Readings</h2>
-        <p className="text-sm text-muted-foreground mt-1">Enter closing readings and testing volume for each nozzle. Opening is auto-populated from previous day.</p>
+        <p className="text-sm text-muted-foreground mt-1">Enter closing readings and testing volume for each nozzle. Opening can be entered manually or carried over.</p>
       </div>
 
       <div className="space-y-4">
@@ -41,6 +41,7 @@ export default function MeterReadings({ store }: { store: StoreReturn }) {
                         <td className="py-3">
                           <Input
                             type="number"
+                            step="0.01"
                             value={r?.closing || ''}
                             onChange={e => updateReading(unit.id, nozzle.name, 'closing', Number(e.target.value))}
                             className="w-32 font-mono bg-secondary border-border"
@@ -50,15 +51,17 @@ export default function MeterReadings({ store }: { store: StoreReturn }) {
                         <td className="py-3">
                           <Input
                             type="number"
+                            step="0.01"
                             value={r?.opening || ''}
-                            readOnly
-                            className="w-32 font-mono bg-muted border-border cursor-not-allowed opacity-70"
-                            placeholder="Auto"
+                            onChange={e => updateReading(unit.id, nozzle.name, 'opening', Number(e.target.value))}
+                            className="w-32 font-mono bg-secondary border-border"
+                            placeholder="0.00"
                           />
                         </td>
                         <td className="py-3">
                           <Input
                             type="number"
+                            step="0.01"
                             value={r?.testing || ''}
                             onChange={e => updateReading(unit.id, nozzle.name, 'testing', Number(e.target.value))}
                             className="w-28 font-mono bg-secondary border-border"
@@ -74,6 +77,22 @@ export default function MeterReadings({ store }: { store: StoreReturn }) {
             </div>
           </div>
         ))}
+
+        {/* Lube */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <h3 className="font-semibold text-foreground mb-4">Lube</h3>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">Amount ₹</span>
+            <Input
+              type="number"
+              step="0.01"
+              value={lube || ''}
+              onChange={e => setLube(Number(e.target.value))}
+              className="w-48 font-mono bg-secondary border-border"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

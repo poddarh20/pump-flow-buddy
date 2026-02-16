@@ -17,7 +17,7 @@ export function getFinancialYearRange(fy: string): { start: string; end: string 
   };
 }
 
-export function getFinancialYearOptions(count = 5): string[] {
+export function getFinancialYearOptions(count = 25): string[] {
   const now = new Date();
   const currentStartYear = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
   const options: string[] = [];

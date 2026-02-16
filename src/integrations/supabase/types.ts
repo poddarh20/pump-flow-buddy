@@ -86,6 +86,7 @@ export type Database = {
           date: string
           fleet_card: number
           id: string
+          paytm: number
           price_cng: number
           price_hsd: number
           price_ms: number
@@ -101,6 +102,7 @@ export type Database = {
           date: string
           fleet_card?: number
           id?: string
+          paytm?: number
           price_cng?: number
           price_hsd?: number
           price_ms?: number
@@ -116,6 +118,7 @@ export type Database = {
           date?: string
           fleet_card?: number
           id?: string
+          paytm?: number
           price_cng?: number
           price_hsd?: number
           price_ms?: number

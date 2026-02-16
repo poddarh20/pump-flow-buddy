@@ -1,18 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  MeterReading, Prices, Outflow, LedgerEntry,
+  MeterReading, Prices, Outflow,
   defaultPrices, units,
 } from '@/lib/petrolPumpData';
 
 function getToday() {
   return new Date().toISOString().split('T')[0];
-}
-
-function getPreviousDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split('T')[0];
 }
 
 function buildDefaultReadings(): MeterReading[] {
@@ -29,15 +23,28 @@ export function usePetrolPumpStore() {
   const [date, setDate] = useState(getToday());
   const [readings, setReadings] = useState<MeterReading[]>(buildDefaultReadings());
   const [prices, setPrices] = useState<Prices>({ ...defaultPrices });
-  const [outflow, setOutflow] = useState<Outflow>({ bankDeposit: 0, creditParty: 0, dailyExpense: 0, fleetCard: 0, cms: 0 });
-  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [outflow, setOutflow] = useState<Outflow>({ bankDeposit: 0, creditParty: 0, fleetCard: 0, cms: 0, paytm: 0, cashCollection: 0 });
+  const [lube, setLube] = useState<number>(0);
   const [dailyRecordId, setDailyRecordId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Load data for selected date
   useEffect(() => {
     loadDayData(date);
   }, [date]);
+
+  // Auto-populate credit party total from credit_transactions for the selected date
+  useEffect(() => {
+    loadCreditPartyTotal(date);
+  }, [date]);
+
+  const loadCreditPartyTotal = async (d: string) => {
+    const { data } = await supabase
+      .from('credit_transactions')
+      .select('amount')
+      .eq('date', d);
+    const total = data ? data.reduce((sum, t) => sum + Number(t.amount), 0) : 0;
+    setOutflow(prev => ({ ...prev, creditParty: total }));
+  };
 
   const loadDayData = async (d: string) => {
     const { data: record } = await supabase
@@ -59,12 +66,13 @@ export function usePetrolPumpStore() {
       setOutflow({
         bankDeposit: Number(record.bank_deposit),
         creditParty: Number(record.credit_party_total),
-        dailyExpense: Number(record.daily_expense),
         fleetCard: Number(rec.fleet_card ?? 0),
         cms: Number(rec.cms ?? 0),
+        paytm: Number(rec.paytm ?? 0),
+        cashCollection: Number(rec.cash_collection ?? 0),
       });
+      setLube(Number(rec.lube ?? 0));
 
-      // Load meter readings
       const { data: meterData } = await supabase
         .from('meter_readings')
         .select('*')
@@ -78,46 +86,17 @@ export function usePetrolPumpStore() {
         });
         setReadings(merged);
       } else {
-        // No readings for this day yet — auto-populate opening from previous day's closing
-        await autoPopulateOpenings(d);
+        setReadings(buildDefaultReadings());
       }
     } else {
       setDailyRecordId(null);
       setPrices({ ...defaultPrices });
-      setOutflow({ bankDeposit: 0, creditParty: 0, dailyExpense: 0, fleetCard: 0, cms: 0 });
-      // Auto-populate opening from previous day's closing
-      await autoPopulateOpenings(d);
+      setOutflow({ bankDeposit: 0, creditParty: 0, fleetCard: 0, cms: 0, paytm: 0, cashCollection: 0 });
+      setLube(0);
+      setReadings(buildDefaultReadings());
     }
   };
 
-  const autoPopulateOpenings = async (d: string) => {
-    const prevDate = getPreviousDate(d);
-    const { data: prevRecord } = await supabase
-      .from('daily_records')
-      .select('id')
-      .eq('date', prevDate)
-      .maybeSingle();
-
-    if (prevRecord) {
-      const { data: prevMeterData } = await supabase
-        .from('meter_readings')
-        .select('*')
-        .eq('daily_record_id', prevRecord.id);
-
-      if (prevMeterData && prevMeterData.length > 0) {
-        const defaultReadings = buildDefaultReadings();
-        const populated = defaultReadings.map(dr => {
-          const prev = prevMeterData.find(m => m.unit_id === dr.unitId && m.nozzle_name === dr.nozzleName);
-          return prev ? { ...dr, opening: Number(prev.closing) } : dr;
-        });
-        setReadings(populated);
-        return;
-      }
-    }
-    setReadings(buildDefaultReadings());
-  };
-
-  // Save/update daily record
   const saveDay = useCallback(async () => {
     setSaving(true);
     try {
@@ -132,9 +111,11 @@ export function usePetrolPumpStore() {
         price_cng: prices.CNG,
         bank_deposit: outflow.bankDeposit,
         credit_party_total: outflow.creditParty,
-        daily_expense: outflow.dailyExpense,
         fleet_card: outflow.fleetCard,
         cms: outflow.cms,
+        paytm: outflow.paytm,
+        cash_collection: outflow.cashCollection,
+        lube: lube,
       };
 
       if (recordId) {
@@ -148,7 +129,6 @@ export function usePetrolPumpStore() {
       }
 
       if (recordId) {
-        // Upsert meter readings
         const readingsData = readings.map(r => ({
           daily_record_id: recordId!,
           unit_id: r.unitId,
@@ -164,7 +144,7 @@ export function usePetrolPumpStore() {
     } finally {
       setSaving(false);
     }
-  }, [date, prices, outflow, readings, dailyRecordId]);
+  }, [date, prices, outflow, readings, dailyRecordId, lube]);
 
   const updateReading = useCallback((unitId: number, nozzleName: string, field: 'opening' | 'closing' | 'testing', value: number) => {
     setReadings(prev => prev.map(r =>
@@ -180,20 +160,12 @@ export function usePetrolPumpStore() {
     setOutflow(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const addLedgerParty = useCallback((name: string) => {
-    setLedger(prev => [...prev, { party: name, balance: 0 }]);
-  }, []);
-
-  const updateLedgerBalance = useCallback((party: string, amount: number) => {
-    setLedger(prev => prev.map(e => e.party === party ? { ...e, balance: e.balance + amount } : e));
-  }, []);
-
   return {
     date, setDate,
     readings, updateReading,
     prices, updatePrice,
     outflow, updateOutflow,
-    ledger, addLedgerParty, updateLedgerBalance,
+    lube, setLube,
     saveDay, saving, dailyRecordId,
   };
 }

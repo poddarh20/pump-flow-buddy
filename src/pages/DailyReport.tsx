@@ -8,9 +8,9 @@ import type { usePetrolPumpStore } from '@/hooks/usePetrolPumpStore';
 type StoreReturn = ReturnType<typeof usePetrolPumpStore>;
 
 export default function DailyReport({ store }: { store: StoreReturn }) {
-  const { date, readings, prices, outflow, updateOutflow } = store;
+  const { date, readings, prices, outflow, updateOutflow, lube } = store;
   const sales = calculateSales(readings);
-  const inflow = calculateInflow(sales, prices);
+  const inflow = calculateInflow(sales, prices, { lube });
   const totalOutflow = calculateTotalOutflow(outflow);
   const balance = inflow - totalOutflow;
 
@@ -36,16 +36,26 @@ export default function DailyReport({ store }: { store: StoreReturn }) {
                     <span className="text-sm text-muted-foreground">{ft}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs text-muted-foreground mr-3">{vol.toFixed(1)}L × ₹{prices[ft]}</span>
-                    <span className="font-mono text-foreground">₹{amt.toFixed(0)}</span>
+                    <span className="text-xs text-muted-foreground mr-3">{vol.toFixed(2)}L × ₹{prices[ft].toFixed(2)}</span>
+                    <span className="font-mono text-foreground">₹{amt.toFixed(2)}</span>
                   </div>
                 </div>
               );
             })}
+            {/* Lube */}
+            <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(30, 70%, 50%)' }} />
+                <span className="text-sm text-muted-foreground">Lube</span>
+              </div>
+              <div className="text-right">
+                <span className="font-mono text-foreground">₹{(lube || 0).toFixed(2)}</span>
+              </div>
+            </div>
           </div>
           <div className="mt-4 pt-3 border-t border-border flex justify-between">
             <span className="font-semibold text-foreground">Total Inflow</span>
-            <span className="font-mono font-bold text-success text-lg">₹{inflow.toFixed(0)}</span>
+            <span className="font-mono font-bold text-success text-lg">₹{inflow.toFixed(2)}</span>
           </div>
         </div>
 
@@ -55,21 +65,24 @@ export default function DailyReport({ store }: { store: StoreReturn }) {
           <div className="space-y-4">
             {([
               { key: 'bankDeposit' as const, label: 'Bank Deposit' },
-              { key: 'creditParty' as const, label: 'Credit Party Payments' },
-              { key: 'dailyExpense' as const, label: 'Daily Expenses' },
+              { key: 'creditParty' as const, label: 'Credit Party Payments', readOnly: true },
               { key: 'fleetCard' as const, label: 'Fleet Card' },
               { key: 'cms' as const, label: 'CMS (Card Machine)' },
-            ]).map(({ key, label }) => (
+              { key: 'paytm' as const, label: 'Paytm' },
+              { key: 'cashCollection' as const, label: 'Cash Collection' },
+            ]).map(({ key, label, readOnly }) => (
               <div key={key}>
                 <label className="text-sm text-muted-foreground mb-1 block">{label}</label>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">₹</span>
                   <Input
                     type="number"
+                    step="0.01"
                     value={outflow[key] || ''}
                     onChange={e => updateOutflow(key, Number(e.target.value))}
-                    className="font-mono bg-secondary border-border"
-                    placeholder="0"
+                    readOnly={readOnly}
+                    className={`font-mono bg-secondary border-border ${readOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    placeholder="0.00"
                   />
                 </div>
               </div>
@@ -77,7 +90,7 @@ export default function DailyReport({ store }: { store: StoreReturn }) {
           </div>
           <div className="mt-4 pt-3 border-t border-border flex justify-between">
             <span className="font-semibold text-foreground">Total Outflow</span>
-            <span className="font-mono font-bold text-destructive text-lg">₹{totalOutflow.toFixed(0)}</span>
+            <span className="font-mono font-bold text-destructive text-lg">₹{totalOutflow.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -86,7 +99,7 @@ export default function DailyReport({ store }: { store: StoreReturn }) {
       <div className={`rounded-lg border p-6 text-center ${balance >= 0 ? 'border-success/30 bg-success/5' : 'border-destructive/30 bg-destructive/5'}`}>
         <p className="text-sm text-muted-foreground mb-1">Net Balance</p>
         <p className={`text-4xl font-bold font-mono ${balance >= 0 ? 'text-success' : 'text-destructive'}`}>
-          ₹{balance.toFixed(0)}
+          ₹{balance.toFixed(2)}
         </p>
       </div>
     </div>
