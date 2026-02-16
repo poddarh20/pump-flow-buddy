@@ -48,7 +48,7 @@ export type Database = {
           amount?: number
           created_at?: string
           date: string
-          fuel_type: string
+          fuel_type?: string
           id?: string
           notes?: string | null
           party_id: string
@@ -79,10 +79,12 @@ export type Database = {
       daily_records: {
         Row: {
           bank_deposit: number
+          cms: number
           created_at: string
           credit_party_total: number
           daily_expense: number
           date: string
+          fleet_card: number
           id: string
           price_cng: number
           price_hsd: number
@@ -92,10 +94,12 @@ export type Database = {
         }
         Insert: {
           bank_deposit?: number
+          cms?: number
           created_at?: string
           credit_party_total?: number
           daily_expense?: number
           date: string
+          fleet_card?: number
           id?: string
           price_cng?: number
           price_hsd?: number
@@ -105,10 +109,12 @@ export type Database = {
         }
         Update: {
           bank_deposit?: number
+          cms?: number
           created_at?: string
           credit_party_total?: number
           daily_expense?: number
           date?: string
+          fleet_card?: number
           id?: string
           price_cng?: number
           price_hsd?: number
@@ -125,6 +131,7 @@ export type Database = {
           id: string
           nozzle_name: string
           opening: number
+          testing: number
           unit_id: number
         }
         Insert: {
@@ -133,6 +140,7 @@ export type Database = {
           id?: string
           nozzle_name: string
           opening?: number
+          testing?: number
           unit_id: number
         }
         Update: {
@@ -141,6 +149,7 @@ export type Database = {
           id?: string
           nozzle_name?: string
           opening?: number
+          testing?: number
           unit_id?: number
         }
         Relationships: [

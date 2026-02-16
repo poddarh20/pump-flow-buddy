@@ -78,6 +78,7 @@ export interface MeterReading {
   nozzleName: string;
   opening: number;
   closing: number;
+  testing: number;
 }
 
 export interface Prices {
@@ -92,6 +93,8 @@ export interface Outflow {
   bankDeposit: number;
   creditParty: number;
   dailyExpense: number;
+  fleetCard: number;
+  cms: number;
 }
 
 export interface LedgerEntry {
@@ -124,7 +127,7 @@ export function calculateSales(readings: MeterReading[]): Record<FuelType, numbe
     const unit = units.find(u => u.id === r.unitId);
     const nozzle = unit?.nozzles.find(n => n.name === r.nozzleName);
     if (nozzle) {
-      const volume = r.closing - r.opening;
+      const volume = (r.closing - r.opening) - (r.testing || 0);
       if (volume > 0) sales[nozzle.fuelType] += volume;
     }
   }
@@ -136,5 +139,5 @@ export function calculateInflow(sales: Record<FuelType, number>, prices: Prices)
 }
 
 export function calculateTotalOutflow(outflow: Outflow): number {
-  return outflow.bankDeposit + outflow.creditParty + outflow.dailyExpense;
+  return outflow.bankDeposit + outflow.creditParty + outflow.dailyExpense + outflow.fleetCard + outflow.cms;
 }
