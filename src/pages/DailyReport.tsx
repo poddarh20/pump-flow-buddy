@@ -57,6 +57,8 @@ export default function DailyReport({ store }: { store: StoreReturn }) {
               { key: 'bankDeposit' as const, label: 'Bank Deposit' },
               { key: 'creditParty' as const, label: 'Credit Party Payments' },
               { key: 'dailyExpense' as const, label: 'Daily Expenses' },
+              { key: 'fleetCard' as const, label: 'Fleet Card' },
+              { key: 'cms' as const, label: 'CMS (Card Machine)' },
             ]).map(({ key, label }) => (
               <div key={key}>
                 <label className="text-sm text-muted-foreground mb-1 block">{label}</label>

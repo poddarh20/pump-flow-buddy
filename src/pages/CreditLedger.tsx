@@ -75,7 +75,7 @@ export default function CreditLedger() {
     const { data } = await supabase.from('credit_transactions').insert({
       party_id: selectedParty,
       date: tx.date,
-      fuel_type: '-',
+      fuel_type: 'CREDIT',
       quantity: 0,
       amount: tx.amount,
       payment_received: tx.payment_received,

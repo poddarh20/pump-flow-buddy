@@ -11,7 +11,7 @@ export default function MeterReadings({ store }: { store: StoreReturn }) {
     <div className="p-6 space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-foreground">Meter Readings</h2>
-        <p className="text-sm text-muted-foreground mt-1">Enter opening and closing readings for each nozzle</p>
+        <p className="text-sm text-muted-foreground mt-1">Enter closing readings and testing volume for each nozzle. Opening is auto-populated from previous day.</p>
       </div>
 
       <div className="space-y-4">
@@ -23,23 +23,26 @@ export default function MeterReadings({ store }: { store: StoreReturn }) {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-2 text-muted-foreground font-medium">Nozzle</th>
-                    <th className="text-left py-2 text-muted-foreground font-medium">Opening</th>
                     <th className="text-left py-2 text-muted-foreground font-medium">Closing</th>
+                    <th className="text-left py-2 text-muted-foreground font-medium">Opening</th>
+                    <th className="text-left py-2 text-muted-foreground font-medium">Testing</th>
                     <th className="text-left py-2 text-muted-foreground font-medium">Volume</th>
                   </tr>
                 </thead>
                 <tbody>
                   {unit.nozzles.map(nozzle => {
                     const r = readings.find(rd => rd.unitId === unit.id && rd.nozzleName === nozzle.name);
-                    const volume = r ? Math.max(0, r.closing - r.opening) : 0;
+                    const gross = r ? Math.max(0, r.closing - r.opening) : 0;
+                    const testing = r?.testing || 0;
+                    const volume = Math.max(0, gross - testing);
                     return (
                       <tr key={nozzle.name} className="border-b border-border last:border-0">
                         <td className="py-3 text-foreground">{nozzle.name}</td>
                         <td className="py-3">
                           <Input
                             type="number"
-                            value={r?.opening || ''}
-                            onChange={e => updateReading(unit.id, nozzle.name, 'opening', Number(e.target.value))}
+                            value={r?.closing || ''}
+                            onChange={e => updateReading(unit.id, nozzle.name, 'closing', Number(e.target.value))}
                             className="w-32 font-mono bg-secondary border-border"
                             placeholder="0.00"
                           />
@@ -47,9 +50,18 @@ export default function MeterReadings({ store }: { store: StoreReturn }) {
                         <td className="py-3">
                           <Input
                             type="number"
-                            value={r?.closing || ''}
-                            onChange={e => updateReading(unit.id, nozzle.name, 'closing', Number(e.target.value))}
-                            className="w-32 font-mono bg-secondary border-border"
+                            value={r?.opening || ''}
+                            readOnly
+                            className="w-32 font-mono bg-muted border-border cursor-not-allowed opacity-70"
+                            placeholder="Auto"
+                          />
+                        </td>
+                        <td className="py-3">
+                          <Input
+                            type="number"
+                            value={r?.testing || ''}
+                            onChange={e => updateReading(unit.id, nozzle.name, 'testing', Number(e.target.value))}
+                            className="w-28 font-mono bg-secondary border-border"
                             placeholder="0.00"
                           />
                         </td>
