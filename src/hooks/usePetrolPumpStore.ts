@@ -32,21 +32,18 @@ export function usePetrolPumpStore() {
     loadDayData(date);
   }, [date]);
 
-  // Auto-populate credit party total from credit_transactions for the selected date
-  useEffect(() => {
-    loadCreditPartyTotal(date);
-  }, [date]);
-
-  const loadCreditPartyTotal = async (d: string) => {
+  const loadCreditPartyTotal = async (d: string): Promise<number> => {
     const { data } = await supabase
       .from('credit_transactions')
       .select('amount')
       .eq('date', d);
-    const total = data ? data.reduce((sum, t) => sum + Number(t.amount), 0) : 0;
-    setOutflow(prev => ({ ...prev, creditParty: total }));
+    return data ? data.reduce((sum, t) => sum + Number(t.amount), 0) : 0;
   };
 
   const loadDayData = async (d: string) => {
+    // Always compute credit party total from credit_transactions
+    const creditTotal = await loadCreditPartyTotal(d);
+
     const { data: record } = await supabase
       .from('daily_records')
       .select('*')
@@ -65,7 +62,7 @@ export function usePetrolPumpStore() {
       });
       setOutflow({
         bankDeposit: Number(record.bank_deposit),
-        creditParty: Number(record.credit_party_total),
+        creditParty: creditTotal,
         fleetCard: Number(rec.fleet_card ?? 0),
         cms: Number(rec.cms ?? 0),
         paytm: Number(rec.paytm ?? 0),
@@ -91,7 +88,7 @@ export function usePetrolPumpStore() {
     } else {
       setDailyRecordId(null);
       setPrices({ ...defaultPrices });
-      setOutflow({ bankDeposit: 0, creditParty: 0, fleetCard: 0, cms: 0, paytm: 0, cashCollection: 0 });
+      setOutflow({ bankDeposit: 0, creditParty: creditTotal, fleetCard: 0, cms: 0, paytm: 0, cashCollection: 0 });
       setLube(0);
       setReadings(buildDefaultReadings());
     }
