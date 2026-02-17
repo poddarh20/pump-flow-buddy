@@ -9,6 +9,7 @@ import MeterReadings from './MeterReadings';
 import FuelPrices from './FuelPrices';
 import DailyReport from './DailyReport';
 import CreditLedger from './CreditLedger';
+import OutstandingDues from './OutstandingDues';
 import MonthlyView from './MonthlyView';
 import { toast } from 'sonner';
 
@@ -25,7 +26,7 @@ const Index = () => {
       <AppSidebar />
       <div className="flex-1 flex flex-col">
         <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-card">
-          <span className="text-sm text-muted-foreground">Petrol Pump Management</span>
+          <span className="text-sm text-muted-foreground">Shivala Petro Mart</span>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">Date:</span>
             <Input
@@ -46,7 +47,8 @@ const Index = () => {
             <Route path="readings" element={<MeterReadings store={store} />} />
             <Route path="prices" element={<FuelPrices store={store} />} />
             <Route path="report" element={<DailyReport store={store} />} />
-            <Route path="credit-ledger" element={<CreditLedger />} />
+            <Route path="credit-ledger" element={<CreditLedger date={store.date} />} />
+            <Route path="outstanding-dues" element={<OutstandingDues />} />
             <Route path="monthly" element={<MonthlyView />} />
           </Routes>
         </main>

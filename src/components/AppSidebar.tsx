@@ -1,4 +1,4 @@
-import { Fuel, Gauge, FileText, CreditCard, DollarSign, Calendar, Users } from 'lucide-react';
+import { Fuel, Gauge, FileText, CreditCard, DollarSign, Calendar, Users, AlertCircle } from 'lucide-react';
 import { NavLink as RouterNavLink } from 'react-router-dom';
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/prices', icon: DollarSign, label: 'Fuel Prices' },
   { to: '/report', icon: FileText, label: 'Daily Report' },
   { to: '/credit-ledger', icon: Users, label: 'Credit Ledger' },
+  { to: '/outstanding-dues', icon: AlertCircle, label: 'Outstanding Dues' },
   { to: '/monthly', icon: Calendar, label: 'Monthly View' },
 ];
 
@@ -19,7 +20,7 @@ export function AppSidebar() {
             <Fuel className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-bold text-foreground text-lg leading-tight">FuelDesk</h1>
+            <h1 className="font-bold text-foreground text-lg leading-tight">Shivala Petro Mart</h1>
             <p className="text-xs text-muted-foreground">Pump Management</p>
           </div>
         </div>
