@@ -10,9 +10,10 @@ interface Transaction { id?: string; party_id: string; party_name: string; amoun
 
 interface CreditLedgerProps {
   date: string;
+  onCreditChange?: () => void;
 }
 
-export default function CreditLedger({ date }: CreditLedgerProps) {
+export default function CreditLedger({ date, onCreditChange }: CreditLedgerProps) {
   const [parties, setParties] = useState<CreditParty[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [newPartyName, setNewPartyName] = useState('');
@@ -73,12 +74,25 @@ export default function CreditLedger({ date }: CreditLedgerProps) {
       setTxAmount('');
       setTxPayment('');
       setTxNotes('');
+      onCreditChange?.();
     }
   };
 
   const deleteTransaction = async (id: string) => {
     await supabase.from('credit_transactions').delete().eq('id', id);
     setTransactions(prev => prev.filter(t => t.id !== id));
+    onCreditChange?.();
+  };
+
+  const deleteParty = async (partyId: string) => {
+    // First delete all transactions for this party
+    await supabase.from('credit_transactions').delete().eq('party_id', partyId);
+    // Then delete the party
+    await supabase.from('credit_parties').delete().eq('id', partyId);
+    setParties(prev => prev.filter(p => p.id !== partyId));
+    setTransactions(prev => prev.filter(t => t.party_id !== partyId));
+    if (selectedPartyId === partyId) setSelectedPartyId('');
+    onCreditChange?.();
   };
 
   const totalCredit = transactions.reduce((s, t) => s + t.amount, 0);
@@ -92,17 +106,39 @@ export default function CreditLedger({ date }: CreditLedgerProps) {
       </div>
 
       {/* Add party */}
-      <div className="flex gap-2 max-w-md">
-        <Input
-          value={newPartyName}
-          onChange={e => setNewPartyName(e.target.value)}
-          placeholder="New party name"
-          className="bg-secondary border-border"
-          onKeyDown={e => e.key === 'Enter' && addParty()}
-        />
-        <Button onClick={addParty} size="sm" className="gap-1">
-          <Plus className="w-4 h-4" /> Add Party
-        </Button>
+      <div className="space-y-2">
+        <div className="flex gap-2 max-w-md">
+          <Input
+            value={newPartyName}
+            onChange={e => setNewPartyName(e.target.value)}
+            placeholder="New party name"
+            className="bg-secondary border-border"
+            onKeyDown={e => e.key === 'Enter' && addParty()}
+          />
+          <Button onClick={addParty} size="sm" className="gap-1">
+            <Plus className="w-4 h-4" /> Add Party
+          </Button>
+        </div>
+        {parties.length > 0 && (
+          <div className="flex flex-wrap gap-2 max-w-2xl">
+            {parties.map(p => (
+              <span key={p.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary text-xs text-foreground border border-border">
+                {p.name}
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete party "${p.name}" and all their transactions?`)) {
+                      deleteParty(p.id);
+                    }
+                  }}
+                  className="ml-1 text-muted-foreground hover:text-destructive"
+                  title="Delete party"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add transaction form */}
