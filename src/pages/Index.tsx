@@ -47,7 +47,7 @@ const Index = () => {
             <Route path="readings" element={<MeterReadings store={store} />} />
             <Route path="prices" element={<FuelPrices store={store} />} />
             <Route path="report" element={<DailyReport store={store} />} />
-            <Route path="credit-ledger" element={<CreditLedger date={store.date} />} />
+            <Route path="credit-ledger" element={<CreditLedger date={store.date} onCreditChange={store.refreshCreditTotal} />} />
             <Route path="outstanding-dues" element={<OutstandingDues />} />
             <Route path="monthly" element={<MonthlyView />} />
           </Routes>

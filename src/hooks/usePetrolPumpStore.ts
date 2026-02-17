@@ -157,6 +157,11 @@ export function usePetrolPumpStore() {
     setOutflow(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  const refreshCreditTotal = useCallback(async () => {
+    const creditTotal = await loadCreditPartyTotal(date);
+    setOutflow(prev => ({ ...prev, creditParty: creditTotal }));
+  }, [date]);
+
   return {
     date, setDate,
     readings, updateReading,
@@ -164,5 +169,6 @@ export function usePetrolPumpStore() {
     outflow, updateOutflow,
     lube, setLube,
     saveDay, saving, dailyRecordId,
+    refreshCreditTotal,
   };
 }
