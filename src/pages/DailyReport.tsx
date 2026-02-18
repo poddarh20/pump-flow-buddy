@@ -8,9 +8,9 @@ import type { usePetrolPumpStore } from '@/hooks/usePetrolPumpStore';
 type StoreReturn = ReturnType<typeof usePetrolPumpStore>;
 
 export default function DailyReport({ store }: { store: StoreReturn }) {
-  const { date, readings, prices, outflow, updateOutflow, lube } = store;
+  const { date, readings, prices, outflow, updateOutflow, lube, partyPayments } = store;
   const sales = calculateSales(readings);
-  const inflow = calculateInflow(sales, prices, { lube });
+  const inflow = calculateInflow(sales, prices, { lube }, partyPayments);
   const totalOutflow = calculateTotalOutflow(outflow);
   const balance = inflow - totalOutflow;
 
@@ -52,6 +52,18 @@ export default function DailyReport({ store }: { store: StoreReturn }) {
                 <span className="font-mono text-foreground">₹{(lube || 0).toFixed(2)}</span>
               </div>
             </div>
+            {/* Balance Received from Credit Parties */}
+            {(partyPayments || []).filter(p => p.amount > 0).map(p => (
+              <div key={p.partyId} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                  <span className="text-sm text-muted-foreground">Balance Rcvd – {p.partyName}</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-mono text-green-600">₹{p.amount.toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
           </div>
           <div className="mt-4 pt-3 border-t border-border flex justify-between">
             <span className="font-semibold text-foreground">Total Inflow</span>
