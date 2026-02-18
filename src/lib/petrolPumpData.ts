@@ -108,6 +108,12 @@ export interface InflowExtras {
   lube: number;
 }
 
+export interface PartyPayment {
+  partyId: string;
+  partyName: string;
+  amount: number;
+}
+
 export interface DailyRecord {
   date: string;
   readings: MeterReading[];
@@ -141,9 +147,10 @@ export function calculateSales(readings: MeterReading[]): Record<FuelType, numbe
   return sales;
 }
 
-export function calculateInflow(sales: Record<FuelType, number>, prices: Prices, inflowExtras?: InflowExtras): number {
+export function calculateInflow(sales: Record<FuelType, number>, prices: Prices, inflowExtras?: InflowExtras, partyPayments?: PartyPayment[]): number {
   const fuelInflow = fuelTypes.reduce((sum, ft) => sum + sales[ft] * prices[ft], 0);
-  return fuelInflow + (inflowExtras?.lube || 0);
+  const paymentsTotal = (partyPayments || []).reduce((sum, p) => sum + p.amount, 0);
+  return fuelInflow + (inflowExtras?.lube || 0) + paymentsTotal;
 }
 
 export function calculateTotalOutflow(outflow: Outflow): number {

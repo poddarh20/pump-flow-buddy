@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  MeterReading, Prices, Outflow,
+  MeterReading, Prices, Outflow, PartyPayment,
   defaultPrices, units,
 } from '@/lib/petrolPumpData';
 
@@ -27,6 +27,7 @@ export function usePetrolPumpStore() {
   const [lube, setLube] = useState<number>(0);
   const [dailyRecordId, setDailyRecordId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [partyPayments, setPartyPayments] = useState<PartyPayment[]>([]);
 
   useEffect(() => {
     loadDayData(date);
@@ -40,9 +41,42 @@ export function usePetrolPumpStore() {
     return data ? data.reduce((sum, t) => sum + Number(t.amount), 0) : 0;
   };
 
+  const loadPartyPayments = async (d: string): Promise<PartyPayment[]> => {
+    const { data: txData } = await supabase
+      .from('credit_transactions')
+      .select('party_id, payment_received')
+      .eq('date', d)
+      .gt('payment_received', 0);
+    if (!txData || txData.length === 0) return [];
+
+    const partyIds = [...new Set(txData.map(t => t.party_id))];
+    const { data: partyData } = await supabase
+      .from('credit_parties')
+      .select('id, name')
+      .in('id', partyIds);
+
+    const nameMap: Record<string, string> = {};
+    (partyData || []).forEach(p => { nameMap[p.id] = p.name; });
+
+    const grouped: Record<string, number> = {};
+    txData.forEach(t => {
+      grouped[t.party_id] = (grouped[t.party_id] || 0) + Number(t.payment_received);
+    });
+
+    return Object.entries(grouped).map(([partyId, amount]) => ({
+      partyId,
+      partyName: nameMap[partyId] || 'Unknown',
+      amount,
+    }));
+  };
+
   const loadDayData = async (d: string) => {
-    // Always compute credit party total from credit_transactions
-    const creditTotal = await loadCreditPartyTotal(d);
+    // Always compute credit party total and party payments from credit_transactions
+    const [creditTotal, payments] = await Promise.all([
+      loadCreditPartyTotal(d),
+      loadPartyPayments(d),
+    ]);
+    setPartyPayments(payments);
 
     const { data: record } = await supabase
       .from('daily_records')
@@ -158,8 +192,12 @@ export function usePetrolPumpStore() {
   }, []);
 
   const refreshCreditTotal = useCallback(async () => {
-    const creditTotal = await loadCreditPartyTotal(date);
+    const [creditTotal, payments] = await Promise.all([
+      loadCreditPartyTotal(date),
+      loadPartyPayments(date),
+    ]);
     setOutflow(prev => ({ ...prev, creditParty: creditTotal }));
+    setPartyPayments(payments);
   }, [date]);
 
   return {
@@ -168,6 +206,7 @@ export function usePetrolPumpStore() {
     prices, updatePrice,
     outflow, updateOutflow,
     lube, setLube,
+    partyPayments,
     saveDay, saving, dailyRecordId,
     refreshCreditTotal,
   };
