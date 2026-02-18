@@ -1,9 +1,9 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AppSidebar } from '@/components/AppSidebar';
 import { usePetrolPumpStore } from '@/hooks/usePetrolPumpStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, AlertCircle } from 'lucide-react';
 import Dashboard from './Dashboard';
 import MeterReadings from './MeterReadings';
 import FuelPrices from './FuelPrices';
@@ -13,33 +13,58 @@ import OutstandingDues from './OutstandingDues';
 import MonthlyView from './MonthlyView';
 import { toast } from 'sonner';
 
+// Pages where Save Day is relevant (not credit ledger / outstanding dues / monthly)
+const SAVE_RELEVANT_PATHS = ['/', '/readings', '/prices', '/report'];
+
 const Index = () => {
   const store = usePetrolPumpStore();
+  const location = useLocation();
+
+  // Show save reminder on pages where data entry happens
+  const isSavePage = SAVE_RELEVANT_PATHS.some(p =>
+    location.pathname === p || location.pathname.endsWith(p)
+  );
 
   const handleSave = async () => {
     await store.saveDay();
-    toast.success('Daily data saved!');
+    toast.success('Daily data saved successfully!');
   };
 
   return (
     <div className="flex min-h-screen bg-background">
       <AppSidebar />
       <div className="flex-1 flex flex-col">
-        <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-card">
-          <span className="text-sm text-muted-foreground">Shivala Petro Mart</span>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">Date:</span>
-            <Input
-              type="date"
-              value={store.date}
-              onChange={e => store.setDate(e.target.value)}
-              className="w-40 font-mono bg-secondary border-border text-sm"
-            />
-            <Button onClick={handleSave} size="sm" disabled={store.saving} className="gap-1">
-              <Save className="w-4 h-4" />
-              {store.saving ? 'Saving...' : 'Save Day'}
-            </Button>
+        <header className="border-b border-border bg-card">
+          <div className="h-14 flex items-center justify-between px-6">
+            <span className="text-sm font-medium text-foreground">Shivala Petro Mart</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">Date:</span>
+              <Input
+                type="date"
+                value={store.date}
+                onChange={e => store.setDate(e.target.value)}
+                className="w-40 font-mono bg-secondary border-border text-sm"
+              />
+              <Button
+                onClick={handleSave}
+                size="sm"
+                disabled={store.saving}
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm"
+              >
+                <Save className="w-4 h-4" />
+                {store.saving ? 'Saving...' : 'Save Day'}
+              </Button>
+            </div>
           </div>
+          {/* Save reminder banner — shown on data-entry pages when record not yet saved */}
+          {isSavePage && !store.dailyRecordId && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-300 dark:border-yellow-700 px-6 py-2 flex items-center gap-2 text-yellow-800 dark:text-yellow-300">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="text-xs font-medium">
+                ⚠️ Data for <strong>{store.date}</strong> has not been saved yet. Enter your data and click <strong>Save Day</strong> to save it.
+              </span>
+            </div>
+          )}
         </header>
         <main className="flex-1 overflow-auto">
           <Routes>
