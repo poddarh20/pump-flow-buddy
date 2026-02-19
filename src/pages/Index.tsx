@@ -11,6 +11,7 @@ import DailyReport from './DailyReport';
 import CreditLedger from './CreditLedger';
 import OutstandingDues from './OutstandingDues';
 import MonthlyView from './MonthlyView';
+import Install from './Install';
 import { toast } from 'sonner';
 
 // Pages where Save Day is relevant (not credit ledger / outstanding dues / monthly)
@@ -72,6 +73,7 @@ const Index = () => {
             <Route path="credit-ledger" element={<CreditLedger date={store.date} onCreditChange={store.refreshCreditTotal} />} />
             <Route path="outstanding-dues" element={<OutstandingDues />} />
             <Route path="monthly" element={<MonthlyView />} />
+            <Route path="install" element={<Install />} />
           </Routes>
         </main>
       </div>
