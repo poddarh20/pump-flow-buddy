@@ -3,7 +3,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { usePetrolPumpStore } from '@/hooks/usePetrolPumpStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, AlertCircle } from 'lucide-react';
+import { Save } from 'lucide-react';
 import Dashboard from './Dashboard';
 import MeterReadings from './MeterReadings';
 import FuelPrices from './FuelPrices';
@@ -56,13 +56,10 @@ const Index = () => {
               </Button>
             </div>
           </div>
-          {/* Save reminder banner — shown on data-entry pages when record not yet saved */}
-          {isSavePage && !store.dailyRecordId && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-300 dark:border-yellow-700 px-6 py-2 flex items-center gap-2 text-yellow-800 dark:text-yellow-300">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span className="text-xs font-medium">
-                ⚠️ Data for <strong>{store.date}</strong> has not been saved yet. Enter your data and click <strong>Save Day</strong> to save it.
-              </span>
+          {/* Auto-save status indicator */}
+          {isSavePage && store.saving && (
+            <div className="border-t border-border px-6 py-1.5 flex items-center gap-2 bg-muted">
+              <span className="text-xs font-medium text-muted-foreground">💾 Auto-saving...</span>
             </div>
           )}
         </header>

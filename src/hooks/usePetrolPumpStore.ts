@@ -29,14 +29,32 @@ export function usePetrolPumpStore() {
   const [saving, setSaving] = useState(false);
   const [partyPayments, setPartyPayments] = useState<PartyPayment[]>([]);
 
-  // Track whether initial load is complete so we don't auto-save during load
+  // Prevent auto-save from firing during initial data load
   const isLoadedRef = useRef(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep latest values accessible in save function without stale closure
+  const latestRef = useRef({ date, readings, prices, outflow, lube, dailyRecordId });
+  useEffect(() => {
+    latestRef.current = { date, readings, prices, outflow, lube, dailyRecordId };
+  });
 
   useEffect(() => {
     isLoadedRef.current = false;
     loadDayData(date);
   }, [date]);
+
+  // Auto-save whenever data changes (after 1.5s debounce), but only after initial load
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      performSave();
+    }, 1500);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [readings, prices, outflow, lube]);
 
   const loadCreditPartyTotal = async (d: string): Promise<number> => {
     const { data } = await supabase
@@ -76,7 +94,6 @@ export function usePetrolPumpStore() {
   };
 
   const loadDayData = async (d: string) => {
-    // Always compute credit party total and party payments from credit_transactions
     const [creditTotal, payments] = await Promise.all([
       loadCreditPartyTotal(d),
       loadPartyPayments(d),
@@ -131,9 +148,14 @@ export function usePetrolPumpStore() {
       setLube(0);
       setReadings(buildDefaultReadings());
     }
+
+    // Mark as loaded so auto-save can start reacting to changes
+    isLoadedRef.current = true;
   };
 
-  const saveDay = useCallback(async () => {
+  // Core save function using latestRef to avoid stale closures
+  const performSave = async () => {
+    const { date, readings, prices, outflow, lube, dailyRecordId } = latestRef.current;
     setSaving(true);
     try {
       let recordId = dailyRecordId;
@@ -161,6 +183,7 @@ export function usePetrolPumpStore() {
         if (data) {
           recordId = data.id;
           setDailyRecordId(data.id);
+          latestRef.current.dailyRecordId = data.id;
         }
       }
 
@@ -180,7 +203,12 @@ export function usePetrolPumpStore() {
     } finally {
       setSaving(false);
     }
-  }, [date, prices, outflow, readings, dailyRecordId, lube]);
+  };
+
+  const saveDay = useCallback(async () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    await performSave();
+  }, []);
 
   const updateReading = useCallback((unitId: number, nozzleName: string, field: 'opening' | 'closing' | 'testing', value: number) => {
     setReadings(prev => prev.map(r =>
