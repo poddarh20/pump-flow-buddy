@@ -1,4 +1,4 @@
-import { Fuel, Gauge, FileText, CreditCard, DollarSign, Calendar, Users, AlertCircle } from 'lucide-react';
+import { Fuel, Gauge, FileText, DollarSign, Calendar, Users, AlertCircle, Smartphone } from 'lucide-react';
 import { NavLink as RouterNavLink } from 'react-router-dom';
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/credit-ledger', icon: Users, label: 'Credit Ledger' },
   { to: '/outstanding-dues', icon: AlertCircle, label: 'Outstanding Dues' },
   { to: '/monthly', icon: Calendar, label: 'Monthly View' },
+  { to: '/install', icon: Smartphone, label: 'Install App' },
 ];
 
 export function AppSidebar() {
