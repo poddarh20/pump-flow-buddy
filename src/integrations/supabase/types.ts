@@ -79,6 +79,7 @@ export type Database = {
       daily_records: {
         Row: {
           bank_deposit: number
+          cash_collection: number
           cms: number
           created_at: string
           credit_party_total: number
@@ -86,6 +87,7 @@ export type Database = {
           date: string
           fleet_card: number
           id: string
+          lube: number
           paytm: number
           price_cng: number
           price_hsd: number
@@ -95,6 +97,7 @@ export type Database = {
         }
         Insert: {
           bank_deposit?: number
+          cash_collection?: number
           cms?: number
           created_at?: string
           credit_party_total?: number
@@ -102,6 +105,7 @@ export type Database = {
           date: string
           fleet_card?: number
           id?: string
+          lube?: number
           paytm?: number
           price_cng?: number
           price_hsd?: number
@@ -111,6 +115,7 @@ export type Database = {
         }
         Update: {
           bank_deposit?: number
+          cash_collection?: number
           cms?: number
           created_at?: string
           credit_party_total?: number
@@ -118,6 +123,7 @@ export type Database = {
           date?: string
           fleet_card?: number
           id?: string
+          lube?: number
           paytm?: number
           price_cng?: number
           price_hsd?: number
