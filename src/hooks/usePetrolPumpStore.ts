@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   MeterReading, Prices, Outflow, PartyPayment,
@@ -29,7 +29,12 @@ export function usePetrolPumpStore() {
   const [saving, setSaving] = useState(false);
   const [partyPayments, setPartyPayments] = useState<PartyPayment[]>([]);
 
+  // Track whether initial load is complete so we don't auto-save during load
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
+    isLoadedRef.current = false;
     loadDayData(date);
   }, [date]);
 
